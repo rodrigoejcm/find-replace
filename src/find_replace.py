@@ -6,8 +6,8 @@ import os, sys
 from faker import Factory
 fake = Factory.create('pt_BR')
 
-path = "/home/rodrigo/Projetos/python/IPEA/entrevistas/teste/"
-path_save = "/home/rodrigo/Projetos/python/IPEA/save/teste/"
+path = "../input/"
+path_save = "../output/"
 
 
 local = uno.getComponentContext()
@@ -470,7 +470,7 @@ for file in dirs:
         else:
                subs_de_para.append("Entrevista " + file + " - Ñão possui nome.")
 
-    path_arquivo_save = "file://"+path_save+file+".odt"
+    path_arquivo_save = "file://"+path_save+file+".doc"
     document.storeAsURL(path_arquivo_save,())
     document.dispose()
 
