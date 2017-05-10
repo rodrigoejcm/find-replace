@@ -4,6 +4,8 @@ input/*.doc
 input/*.odt
 input/*.txt
 
+subs/*.csv
+
 output/*.doc
 output/*.odt
 output/*.txt
