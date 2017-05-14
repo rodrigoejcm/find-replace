@@ -19,11 +19,11 @@ output_txt_de_para = []
 
 #carrega substituições
 with open(path_subs+'input.csv') as csvfile:
-    colunas = ['Arquivo', 'Nome', 'Sexo']
+    colunas = ['Arquivo', 'Nome', 'Primeiro_Nome', 'Sexo']
     reader = csv.DictReader(csvfile, fieldnames=colunas)
     for i, linha in enumerate(reader):
         if (linha['Nome'] != "") and (linha['Arquivo'] != "") and  (linha['Sexo'] != ""):
-            subs[i] = {"Arquivo": linha['Arquivo'], "Nome": linha['Nome'], "Sexo": linha['Sexo']}
+            subs[i] = {"Arquivo": linha['Arquivo'], "Nome": linha['Nome'], "Primeiro_Nome": linha['Primeiro_Nome'], "Sexo": linha['Sexo']}
 
 
 #Identifica o serviço do Libre Office
@@ -43,8 +43,8 @@ t = len(subs)
 
 for i, (k,v) in enumerate(subs.items()):
 
-
     #v['Nome']
+    #v['Primeiro_Nome']
     #v['Arquivo']
     #v['Sexo']
 
@@ -58,6 +58,8 @@ for i, (k,v) in enumerate(subs.items()):
         search = document.createSearchDescriptor()
         cursor = document.Text.createTextCursor()
 
+
+        #PRIMEIRO BUSCA O NOME COMPLETO
         search.SearchString = v['Nome']
         search.SearchCaseSensitive = True
         search.SearchWords = True
@@ -66,20 +68,41 @@ for i, (k,v) in enumerate(subs.items()):
 
         if found:
             if v['Sexo'] == "Masculino":
-                 novo_nome = fake.name_male()
+                 novo_nome = fake.first_name_male()
+                 novo_nome_sobrenome = novo_nome + " " + fake.last_name()
             else:
-                 novo_nome = fake.name_female()
+                 novo_nome = fake.first_name_female()
+                 novo_nome_sobrenome = novo_nome + " " + fake.last_name()
 
-            output_txt_subs.append(arquivo+ " - " + v['Nome'])
-            output_txt_de_para.append("Entrevista " + arquivo + " - DE: " + v['Nome'] + " PARA: " +  novo_nome)
+            output_txt_subs.append([ arquivo , "Susbstituição Nome Completo: " + v['Nome']])
+            output_txt_de_para.append( [ arquivo,  v['Nome']  ,  novo_nome_sobrenome])
 
         else:
-           output_txt_subs.append("Entrevista " + arquivo + " - Ñão possui o nome " + v['Nome'])
+           output_txt_subs.append( [arquivo,  "Nome não encontrado: "  + v['Nome'] ] )
 
         while found:
-            found.String =  found.String.replace( v['Nome'],novo_nome)
+            found.String =  found.String.replace( v['Nome'],novo_nome_sobrenome)
             found = document.findNext( found.End, search)
-            output_txt_subs.append(arquivo+ " - " + v['Nome'])
+            output_txt_subs.append([ arquivo , "Susbstituição Nome Completo: " + v['Nome']])
+
+
+        #DEPOIS BUSCA SOMENTO O PRIMEIRO NOME
+        search.SearchString = v['Primeiro_Nome']
+        search.SearchCaseSensitive = True
+        search.SearchWords = True
+
+        found = document.findFirst( search )
+
+        if found:
+
+            output_txt_subs.append([ arquivo , "Susbstituição Primeiro Nome: " + v['Primeiro_Nome']])
+            output_txt_de_para.append( [ arquivo,  v['Primeiro_Nome']  ,  novo_nome])
+
+
+        while found:
+            found.String =  found.String.replace( v['Primeiro_Nome'] ,novo_nome)
+            found = document.findNext( found.End, search)
+            output_txt_subs.append([ arquivo , "Susbstituição Primeiro Nome: " + v['Primeiro_Nome'] ])
 
         path_arquivo_save = "file://"+path_output+arquivo
         document.storeAsURL(path_arquivo_save,())
@@ -87,15 +110,22 @@ for i, (k,v) in enumerate(subs.items()):
 
     except:
         print("(%d de %d) Arquivo %s NAO encontrado " % (i,t,arquivo))
+        output_txt_subs.append([ arquivo , "Arquivo não encontrado" ])
 
-        output_txt_subs.append("Entrevista " + arquivo + " não encontrada.")
+
+with open(path_output+'resultado_de_para.csv', 'w') as csvfile:
+    campos = ['Arquivo', 'De _Nome', 'Para_Nome']
+    writer = csv.DictWriter(csvfile, fieldnames=campos)
+    writer.writeheader()
+
+    for de_para in output_txt_de_para:
+        writer.writerow({'Arquivo': de_para[0], 'De _Nome': de_para[1], 'Para_Nome' : de_para[2]})
 
 
-outFile = open(path_output+'resultado.txt', 'a')
-outFile.write("Substituições Realizadas\n")
-outFile.write("\n".join(output_txt_subs))
-outFile.close()
-outFile = open(path_output+'resultado_de_para.txt', 'a')
-outFile.write("De-Para realizado\n")
-outFile.write("\n".join(output_txt_de_para))
-outFile.close()
+with open(path_output+'resultado_substituicoes.csv', 'w') as csvfile:
+    campos_2 = ['Arquivo', 'Resultado']
+    writer = csv.DictWriter(csvfile, fieldnames=campos_2)
+    writer.writeheader()
+
+    for result in output_txt_subs:
+        writer.writerow({ 'Arquivo': result[0], 'Resultado': result[1] })
